@@ -1,5 +1,5 @@
 import { sdk } from './sdk'
-import { manifest as helloWorldManifest } from 'hello-world-startos/startos/manifest'
+// import { manifest as delugeManifest } from 'deluge-startos/startos/manifest'
 import { uiPort } from './utils'
 
 export const main = sdk.setupMain(async ({ effects, started }) => {
@@ -8,7 +8,7 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
    *
    * In this section, we fetch any resources or run any desired preliminary commands.
    */
-  console.info('Starting Hello Moon!')
+  console.info('Starting Deluge!')
 
   const depResult = await sdk.checkDependencies(effects)
   depResult.throwIfNotSatisfied()
@@ -23,24 +23,35 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
   return sdk.Daemons.of(effects, started).addDaemon('primary', {
     subcontainer: await sdk.SubContainer.of(
       effects,
-      { imageId: 'hello-moon' },
+      { imageId: 'deluge' },
       sdk.Mounts.of()
         .mountVolume({
-          volumeId: 'main',
+          volumeId: 'config',
           subpath: null,
-          mountpoint: '.data',
+          mountpoint: '/config', 
           readonly: false,
-        })
-        .mountDependency<typeof helloWorldManifest>({
-          dependencyId: 'hello-world',
-          volumeId: 'main',
+        }).mountVolume({
+          volumeId: 'downloads',
           subpath: null,
-          mountpoint: '/hello-world',
-          readonly: true,
+          mountpoint: '/downloads', 
+          readonly: false,
         }),
+      // .mountDependency<typeof delugeManifest>({
+      //   dependencyId: 'hello-world',
+      //   volumeId: 'main',
+      //   subpath: null,
+      //   mountpoint: '/hello-world',
+      //   readonly: true,
+      // }),
       'hello-moon-sub',
     ),
-    exec: { command: ['hello-world'] },
+    exec: {
+      command: ['/init'], runAsInit: true, env: {
+        DELUGE_LOGLEVEL: 'info',
+        PUID: '1000',
+        PGID: '1000'
+      }
+    },
     ready: {
       display: 'Web Interface',
       fn: () =>
@@ -49,6 +60,6 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
           errorMessage: 'The web interface is unreachable',
         }),
     },
-    requires: [],
+    requires: [], 
   })
 })
